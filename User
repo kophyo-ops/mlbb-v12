@@ -1,11 +1,21 @@
-import requests, re, urllib3, time, threading, os, subprocess, datetime
+import requests, re, urllib3, time, threading, os, subprocess, datetime, socket
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 def get_hwid():
     try:
-        cmd = subprocess.check_output('settings get secure android_id', shell=True).decode().strip()
-        return cmd if cmd else "UNKNOWN_DEVICE"
+        # နည်းလမ်း ၁ - Android ID ကို ဖတ်မယ်
+        id1 = subprocess.check_output('settings get secure android_id', shell=True).decode().strip()
+        if id1 and id1 != "null" and id1 != "": return id1
+        
+        # နည်းလမ်း ၂ - Serial Number ကို ဖတ်မယ်
+        id2 = subprocess.check_output('getprop ro.serialno', shell=True).decode().strip()
+        if id2 and id2 != "": return id2
+        
+        # နည်းလမ်း ၃ - Hostname (Termux ID) ကို ယူမယ်
+        return socket.gethostname()
     except:
-        return "UNKNOWN_DEVICE"
+        return "DEV_" + os.getlogin()
 
 def check_key():
     os.system('clear')
@@ -18,7 +28,7 @@ def check_key():
     user_key = input("\n\033[96m[?] Enter Your Key: \033[0m").strip()
     
     if not os.path.exists("keys.txt"):
-        print("\033[91m[!] Error: keys.txt not found!\033[0m")
+        print("\033[91m[!] Error: keys.txt not found! Please generate a key first.\033[0m")
         return False
         
     with open("keys.txt", "r") as f:
@@ -31,13 +41,16 @@ def check_key():
     for line in lines:
         data = line.strip().split("|")
         if len(data) < 2: continue
+        
         k, expiry = data[0], data[1]
         locked_hwid = data[2] if len(data) > 2 else "NONE"
 
         if user_key == k:
             found = True
             expiry_date = datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M")
+            
             if datetime.datetime.now() < expiry_date:
+                # Device Locking Logic
                 if locked_hwid == "NONE":
                     locked_hwid = hwid
                     valid = True
@@ -45,23 +58,29 @@ def check_key():
                 elif locked_hwid == hwid:
                     valid = True
                 else:
-                    print("\033[91m[!] Error: Key used on another device!\033[0m")
+                    print("\033[91m[!] Error: Key already used on another device!\033[0m")
                     return False
             else:
                 print("\033[91m[!] Key Expired!\033[0m")
                 return False
+        
         updated_lines.append(f"{k}|{expiry}|{locked_hwid}\n")
 
     if valid:
         with open("keys.txt", "w") as f:
             f.writelines(updated_lines)
-        print(f"\033[92m[✓] Key Valid! Starting Engine...\033[0m")
+        print(f"\033[92m[✓] Key Valid! Access Granted.\033[0m")
         time.sleep(2)
         return True
+
     if not found:
-        print("\033[91m[!] Invalid Key.\033[0m")
+        print("\033[91m[!] Invalid Key. Please check your spelling.\033[0m")
     return False
 
 if __name__ == "__main__":
     if check_key():
+        # --- Ko ရဲ့ Tool စတင်အလုပ်လုပ်မည့်နေရာ ---
         print("\033[92m[+] STARLINK BYPASS ACTIVE...\033[0m")
+        # အောက်မှာ Ko ရဲ့ တခြား function တွေ ထည့်ချင်ရင် ထည့်လို့ရပါပြီ
+    else:
+        print("\n\033[91m[!] Access Denied.\033[0m")
