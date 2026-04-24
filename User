@@ -1,75 +1,67 @@
-import requests, re, urllib3, time, threading, os, socket, datetime, subprocess
-from urllib.parse import urlparse, parse_qs, urljoin
+import requests, re, urllib3, time, threading, os, subprocess, datetime
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-# --- DEVICE ID SYSTEM ---
 def get_hwid():
-    # Android ID ကို ဆွဲထုတ်ခြင်း
     try:
         cmd = subprocess.check_output('settings get secure android_id', shell=True).decode().strip()
         return cmd if cmd else "UNKNOWN_DEVICE"
     except:
         return "UNKNOWN_DEVICE"
 
-KEY_FILE = "keys.txt"
-
 def check_key():
     os.system('clear')
     hwid = get_hwid()
     print("\033[95m" + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("\033[95m   🔑  MLBB V12 DEVICE LOCK SYSTEM")
+    print("\033[96m   🔑  MLBB V12 - DEVICE LOCK SYSTEM")
     print(f"\033[97m   YOUR HWID: {hwid}")
     print("\033[95m" + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
     
     user_key = input("\n\033[96m[?] Enter Your Key: \033[0m").strip()
     
-    if os.path.exists(KEY_FILE):
-        with open(KEY_FILE, "r") as f:
-            lines = f.readlines()
+    if not os.path.exists("keys.txt"):
+        print("\033[91m[!] Error: keys.txt not found!\033[0m")
+        return False
         
-        updated_lines = []
-        found = False
-        valid = False
+    with open("keys.txt", "r") as f:
+        lines = f.readlines()
+    
+    updated_lines = []
+    found = False
+    valid = False
 
-        for line in lines:
-            data = line.strip().split("|")
-            k, expiry, locked_hwid = data[0], data[1], data[2] if len(data) > 2 else "NONE"
+    for line in lines:
+        data = line.strip().split("|")
+        if len(data) < 2: continue
+        k, expiry = data[0], data[1]
+        locked_hwid = data[2] if len(data) > 2 else "NONE"
 
-            if user_key == k:
-                found = True
-                expiry_date = datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M")
-                
-                if datetime.datetime.now() < expiry_date:
-                    # Device Lock Logic
-                    if locked_hwid == "NONE":
-                        # ပထမဆုံးဝင်တဲ့ဖုန်းဖြစ်ရင် HWID ကို Lock ချလိုက်မယ်
-                        locked_hwid = hwid
-                        valid = True
-                        print("\033[92m[✓] Device Linked Successfully!\033[0m")
-                    elif locked_hwid == hwid:
-                        # အရင်က Lock ထားတဲ့ဖုန်းနဲ့ တူရင် ပေးဝင်မယ်
-                        valid = True
-                    else:
-                        print("\033[91m[!] Error: Key already used on another device!\033[0m")
-                        return False
+        if user_key == k:
+            found = True
+            expiry_date = datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M")
+            if datetime.datetime.now() < expiry_date:
+                if locked_hwid == "NONE":
+                    locked_hwid = hwid
+                    valid = True
+                    print("\033[92m[✓] Device Linked Successfully!\033[0m")
+                elif locked_hwid == hwid:
+                    valid = True
                 else:
-                    print("\033[91m[!] Key Expired!\033[0m")
+                    print("\033[91m[!] Error: Key used on another device!\033[0m")
                     return False
-            
-            updated_lines.append(f"{k}|{expiry}|{locked_hwid}\n")
+            else:
+                print("\033[91m[!] Key Expired!\033[0m")
+                return False
+        updated_lines.append(f"{k}|{expiry}|{locked_hwid}\n")
 
-        # HWID အသစ်မှတ်တမ်းတင်ရန် ဖိုင်ကို ပြန်ရေးခြင်း
-        if valid:
-            with open(KEY_FILE, "w") as f:
-                f.writelines(updated_lines)
-            print(f"\033[92m[✓] Key Valid! Welcome.\033[0m")
-            time.sleep(1)
-            return True
-
+    if valid:
+        with open("keys.txt", "w") as f:
+            f.writelines(updated_lines)
+        print(f"\033[92m[✓] Key Valid! Starting Engine...\033[0m")
+        time.sleep(2)
+        return True
     if not found:
         print("\033[91m[!] Invalid Key.\033[0m")
     return False
 
-# (ကျန်တဲ့ Starlink Engine ကုဒ်တွေက အရင်အတိုင်းပဲ ထားပါမယ်)
-# ... start_engine() function ...
+if __name__ == "__main__":
+    if check_key():
+        print("\033[92m[+] STARLINK BYPASS ACTIVE...\033[0m")
