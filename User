@@ -1,18 +1,13 @@
-import requests, re, urllib3, time, threading, os, subprocess, datetime, socket
+import requests, urllib3, time, os, subprocess, socket
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+SAVE_FILE = ".session.txt"
+
 def get_hwid():
     try:
-        # နည်းလမ်း ၁ - Android ID ကို ဖတ်မယ်
         id1 = subprocess.check_output('settings get secure android_id', shell=True).decode().strip()
-        if id1 and id1 != "null" and id1 != "": return id1
-        
-        # နည်းလမ်း ၂ - Serial Number ကို ဖတ်မယ်
-        id2 = subprocess.check_output('getprop ro.serialno', shell=True).decode().strip()
-        if id2 and id2 != "": return id2
-        
-        # နည်းလမ်း ၃ - Hostname (Termux ID) ကို ယူမယ်
+        if id1 and id1 != "null": return id1
         return socket.gethostname()
     except:
         return "DEV_" + os.getlogin()
@@ -20,67 +15,43 @@ def get_hwid():
 def check_key():
     os.system('clear')
     hwid = get_hwid()
+    
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r") as f:
+            saved_data = f.read().strip().split("|")
+            if len(saved_data) == 2:
+                s_key, s_hwid = saved_data
+                if s_hwid == hwid:
+                    print("\033[92m[✓] Local Session Found! Accessing Offline...\033[0m")
+                    return True
+
     print("\033[95m" + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("\033[96m   🔑  MLBB V12 - DEVICE LOCK SYSTEM")
+    print("\033[96m   🔑  MLBB V12 - SMART AUTH (ONLINE/OFFLINE)")
     print(f"\033[97m   YOUR HWID: {hwid}")
     print("\033[95m" + "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
     
+    print("\033[93m[!] First time? Please turn on internet to verify Key.\033[0m")
     user_key = input("\n\033[96m[?] Enter Your Key: \033[0m").strip()
-    
-    if not os.path.exists("keys.txt"):
-        print("\033[91m[!] Error: keys.txt not found! Please generate a key first.\033[0m")
+
+    try:
+        url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
+        resp = requests.get(url, timeout=10)
+        lines = resp.text.splitlines()
+        
+        for line in lines:
+            data = line.strip().split("|")
+            if len(data) >= 2 and user_key == data[0]:
+                with open(SAVE_FILE, "w") as f:
+                    f.write(f"{user_key}|{hwid}")
+                print("\033[92m[✓] Key Verified & Saved for Offline Use!\033[0m")
+                time.sleep(2)
+                return True
+        print("\033[91m[!] Invalid Key.\033[0m")
         return False
-        
-    with open("keys.txt", "r") as f:
-        lines = f.readlines()
-    
-    updated_lines = []
-    found = False
-    valid = False
-
-    for line in lines:
-        data = line.strip().split("|")
-        if len(data) < 2: continue
-        
-        k, expiry = data[0], data[1]
-        locked_hwid = data[2] if len(data) > 2 else "NONE"
-
-        if user_key == k:
-            found = True
-            expiry_date = datetime.datetime.strptime(expiry, "%Y-%m-%d %H:%M")
-            
-            if datetime.datetime.now() < expiry_date:
-                # Device Locking Logic
-                if locked_hwid == "NONE":
-                    locked_hwid = hwid
-                    valid = True
-                    print("\033[92m[✓] Device Linked Successfully!\033[0m")
-                elif locked_hwid == hwid:
-                    valid = True
-                else:
-                    print("\033[91m[!] Error: Key already used on another device!\033[0m")
-                    return False
-            else:
-                print("\033[91m[!] Key Expired!\033[0m")
-                return False
-        
-        updated_lines.append(f"{k}|{expiry}|{locked_hwid}\n")
-
-    if valid:
-        with open("keys.txt", "w") as f:
-            f.writelines(updated_lines)
-        print(f"\033[92m[✓] Key Valid! Access Granted.\033[0m")
-        time.sleep(2)
-        return True
-
-    if not found:
-        print("\033[91m[!] Invalid Key. Please check your spelling.\033[0m")
-    return False
+    except:
+        print("\033[91m[!] No Internet Connection!\033[0m")
+        return False
 
 if __name__ == "__main__":
     if check_key():
-        # --- Ko ရဲ့ Tool စတင်အလုပ်လုပ်မည့်နေရာ ---
         print("\033[92m[+] STARLINK BYPASS ACTIVE...\033[0m")
-        # အောက်မှာ Ko ရဲ့ တခြား function တွေ ထည့်ချင်ရင် ထည့်လို့ရပါပြီ
-    else:
-        print("\n\033[91m[!] Access Denied.\033[0m")
