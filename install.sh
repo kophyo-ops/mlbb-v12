@@ -1,0 +1,1 @@
+pkg install git python -y && pip install requests && cd ~ && rm -rf mlbb-v12 && git clone https://github.com/kophyo-ops/mlbb-v12.git && echo "alias m='cd ~/mlbb-v12 && python User'" >> ~/.bashrc && source ~/.bashrc && m
