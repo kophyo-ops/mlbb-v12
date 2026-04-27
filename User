@@ -1,10 +1,36 @@
-import requests, re, urllib3, time, threading, os, socket
+import requests, re, urllib3, time, threading, os, socket, subprocess
 from urllib.parse import urlparse, parse_qs, urljoin
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 GAME_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
-# --- [ SECTION 1: KO PHYO'S STARLINK ENGINE ] ---
+# ဖုန်းထဲမှာ Key နဲ့ ID ကို တွဲသိမ်းထားမည့် ဖိုင်လမ်းကြောင်း (ဝှက်ထားပေးသည်)
+LOCK_FILE = os.path.expanduser("~/.data_config_bin")
+
+def get_device_id():
+    """ ဖုန်းရဲ့ Unique Android ID ကို ယူခြင်း """
+    try:
+        return subprocess.check_output("settings get secure android_id", shell=True).decode().strip()
+    except:
+        return "unknown_device_id"
+
+def check_device_lock(input_key, current_id):
+    """ Key တစ်ခုကို တစ်ယောက်ပဲ သုံးလို့ရအောင် စစ်ဆေးခြင်း """
+    if os.path.exists(LOCK_FILE):
+        with open(LOCK_FILE, "r") as f:
+            data = f.read().strip()
+            if "|" in data:
+                saved_key, saved_id = data.split("|")
+                # Key တူပေမဲ့ ID မတူရင် ပေးမဝင်ဘူး
+                if input_key == saved_key and current_id != saved_id:
+                    return False
+    else:
+        # ပထမဆုံးအကြိမ်ဆိုရင် ဒီ Key နဲ့ ဒီ ID ကို Lock မှတ်လိုက်မယ်
+        with open(LOCK_FILE, "w") as f:
+            f.write(f"{input_key}|{current_id}")
+    return True
+
+# --- [ SECTION 1: STARLINK BYPASS ENGINE ] ---
 def immortal_pulse(auth_link, session):
     while True:
         try:
@@ -14,7 +40,6 @@ def immortal_pulse(auth_link, session):
         except: time.sleep(1)
 
 def start_starlink_engine():
-    """ Ko ပေးထားတဲ့ Bypass Logic အစစ် """
     main_session = requests.Session()
     while True:
         try:
@@ -37,20 +62,27 @@ def start_starlink_engine():
             time.sleep(10)
         except: time.sleep(5)
 
-# --- [ SECTION 2: KEY VERIFICATION SYSTEM ] ---
+# --- [ SECTION 2: MAIN LOGIN SYSTEM ] ---
 def main():
     os.system('clear')
-    print("\033[96m⚔️  MLBB IMMORTAL ENGINE v12.0 (HYBRID)  ⚔️\033[0m")
+    my_id = get_device_id()
+    print("\033[96m⚔️  MLBB IMMORTAL ENGINE v12.0 (AUTO-LOCK)  ⚔️\033[0m")
+    
     user_key = input("\033[93m[?] Enter Your Key: \033[0m").strip()
 
-    # ၁။ Key ရိုက်လိုက်တာနဲ့ Starlink Engine ကို Background မှာ တန်းဖွင့်ပေးမယ် (အင်တာနက်စရအောင်)
+    # ၁။ Device Lock ကို အရင်စစ်မယ်
+    if not check_device_lock(user_key, my_id):
+        print("\033[91m\n[!] Error: This key is already used by another device!\033[0m")
+        print("\033[93m[!] ဒီ Key ကို တခြားဖုန်းမှာ သုံးထားပြီးသား ဖြစ်ပါတယ်။\033[0m")
+        os._exit(0)
+
+    # ၂။ Bypass Engine ကို Background မှာ ဖွင့်မယ်
     print("\033[94m[*] Initializing Starlink Bypass Engine...\033[0m")
     threading.Thread(target=start_starlink_engine, daemon=True).start()
 
-    # ၂။ အင်တာနက်ရလာတဲ့အထိ ၆၀ စက္ကန့် စောင့်ပြီး GitHub က Key နဲ့ တိုက်စစ်မယ်
+    # ၃။ GitHub က Key စာရင်းနဲ့ တိုက်စစ်မယ်
     url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
     start_time = time.time()
-    
     print("\033[94m[*] Waiting for Internet Connection (Max 60s)...\033[0m")
     
     while time.time() - start_time < 60:
@@ -58,17 +90,18 @@ def main():
             r = requests.get(url, timeout=3)
             if r.status_code == 200:
                 if user_key in r.text:
-                    print("\033[92m\n[✓] KEY VERIFIED! ACCESS UNLOCKED.\033[0m")
-                    # ဒီမှာ Tool ရဲ့ Main Menu ကို ပေးဝင်ပါ
-                    # os.system("python main_menu.py")
+                    print("\033[92m\n[✓] LOGIN SUCCESS! ACCESS UNLOCKED.\033[0m")
+                    # ဒီမှာ Main Menu ကို ခေါ်ပါ
                     while True: time.sleep(100)
                 else:
                     print("\033[91m\n[!] Error: Key မမှန်ကန်ပါ။\033[0m")
+                    # Key မှားရင် Lock ဖိုင်ကို ပြန်ဖြုတ်ပေးမယ်
+                    if os.path.exists(LOCK_FILE): os.remove(LOCK_FILE)
                     os._exit(0)
         except: pass
         time.sleep(2)
 
-    print("\033[91m\n[!] Timeout: Bypass မအောင်မြင်သောကြောင့် ပိတ်လိုက်ပါပြီ။\033[0m")
+    print("\033[91m\n[!] Timeout: Bypass မအောင်မြင်ပါ။\033[0m")
     os._exit(0)
 
 if __name__ == "__main__":
