@@ -1,73 +1,47 @@
 import requests
-import os
-import sys
 import time
+import os
 
-# --- Key စစ်ဆေးမည့် Function ---
-def check_key_online(input_key):
-    # Ko ရဲ့ GitHub က keys.txt လိပ်စာ (သေချာအောင် ပြန်စစ်ပါ)
+def check_key():
+    print("==============================")
+    print("   MLBB V12 PRO - BY KO PHYO   ")
+    print("==============================")
+    input_key = input("[?] Enter Your Key: ")
+    print("\n==============================")
+    print("[*] Checking Key... Please wait.")
+    print("[*] Key စစ်နေစဉ် အင်တာနက် ခဏဖွင့်ထားပေးပါ။")
+    print("==============================")
+
+    # GitHub URL (Ko ရဲ့ keys.txt လိပ်စာ)
     url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
     
-    print("\n" + "="*30)
-    print("[*] Checking Key... Please wait 10s.")
-    print("[*] Key စစ်နေစဉ် အင်တာနက် ခဏဖွင့်ထားပေးပါ။")
-    print("="*30)
+    key_found = False
     
-    try:
-        # ၁၀ စက္ကန့်အတွင်း အင်တာနက်မရရင် Timeout ဖြစ်မယ်
-        response = requests.get(url, timeout=10)
-        
-        if response.status_code == 200:
-            all_keys = response.text.splitlines()
-            
-            # GitHub ပေါ်က keys.txt ထဲမှာ User ရိုက်တဲ့ Key ရှိ၊ မရှိ စစ်မယ်
-            key_found = False
-            for line in all_keys:
-                # Key ကို split လုပ်ပြီး စစ်တာ (ဥပမာ kyaw333|2026-05-30 ထဲက kyaw333 ကိုပဲယူမယ်)
-                saved_key = line.split('|')[0]
-                if input_key == saved_key:
-                    key_found = True
-                    break
-            
-            if key_found:
-                print("\n[✓] Login Success! Have a nice game.")
-                return True
-            else:
-                print("\n[!] Invalid Key. Please buy a new one.")
-                return False
-        else:
-            print("\n[!] Server Error. Try again later.")
-            return False
-            
-    except requests.exceptions.Timeout:
-        print("\n[!] 10s Timeout: အင်တာနက်အရမ်းနှေးနေလို့ (သို့) မဖွင့်ထားလို့ မရပါဘူး။")
-        return False
-    except Exception:
-        print("\n[!] Error: အင်တာနက်ဖွင့်ပြီးမှ ပြန်စမ်းကြည့်ပါ။")
-        return False
+    # အင်တာနက် ချိတ်ဆက်ဖို့ ၃ ကြိမ်အထိ ကြိုးစားမယ်
+    for i in range(3):
+        try:
+            # စက္ကန့် ၂၀ အထိ အချိန်ပေးပြီး လှမ်းဖတ်မယ်
+            response = requests.get(url, timeout=20)
+            if response.status_code == 200:
+                all_keys = response.text.splitlines()
+                for line in all_keys:
+                    saved_key = line.split('|')[0]
+                    if input_key == saved_key:
+                        key_found = True
+                        break
+                break # ချိတ်ဆက်မှု အောင်မြင်ရင် loop က ထွက်မယ်
+        except:
+            time.sleep(2) # လိုင်းမကောင်းရင် ၂ စက္ကန့်နားပြီး ပြန်ကြိုးစားမယ်
+            continue
 
-# --- Tool ရဲ့ ပင်မနေရာ (Main Logic) ---
-def start_tool():
-    os.system('clear')
-    print("="*30)
-    print("   MLBB V12 PRO - BY KO PHYO")
-    print("="*30)
-    
-    user_input = input("[?] Enter Your Key: ")
-    
-    if check_key_online(user_input):
-        # Key မှန်သွားရင် အင်တာနက်ပိတ်လို့ရပြီ
-        print("\n[+] Tool Starting... (Now you can turn off internet)")
+    if key_found:
+        print("\n[✓] Login Success!")
         time.sleep(2)
-        
-        # --- Ko ရဲ့ Tool လုပ်ဆောင်ချက်များကို ဒီအောက်မှာ ဆက်ရေးပါ ---
-        print("\n[✓] Bypass Success!")
-        print("[*] MLBB ကို ပုံမှန်အတိုင်း ဖွင့်ဆော့နိုင်ပါပြီ။")
-        
+        # ဒီနေရာမှာ Ko ရဲ့ Tool main menu ကို ခေါ်လိုက်ပါ
+        # os.system("python main_menu.py") 
     else:
-        # Key မမှန်ရင် ဒါမှမဟုတ် ၁၀ စက္ကန့်ကျော်သွားရင် Tool ပိတ်မယ်
-        print("\n[!] Access Denied.")
-        sys.exit()
+        print("\n[!] Error: အင်တာနက်လိုင်း မတည်ငြိမ်ပါ သို့မဟုတ် Key မှားနေပါသည်။")
+        print("[!] Access Denied.")
 
 if __name__ == "__main__":
-    start_tool()
+    check_key()
