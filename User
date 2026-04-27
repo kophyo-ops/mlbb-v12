@@ -1,47 +1,57 @@
-import requests
-import time
 import os
+import time
+import threading
+import requests
 
-def check_key():
-    print("==============================")
-    print("   MLBB V12 PRO - BY KO PHYO   ")
-    print("==============================")
-    input_key = input("[?] Enter Your Key: ")
-    print("\n==============================")
-    print("[*] Checking Key... Please wait.")
-    print("[*] Key စစ်နေစဉ် အင်တာနက် ခဏဖွင့်ထားပေးပါ။")
-    print("==============================")
+def bypass_logic():
+    # Ko ရဲ့ Starlink Bypass / VPN script ကို ဒီမှာ run ပါ
+    # ဥပမာ- os.system("python alpro.py")
+    pass
 
-    # GitHub URL (Ko ရဲ့ keys.txt လိပ်စာ)
+def main():
+    os.system('clear')
+    print("==============================")
+    print("   MLBB V12 PRO - BYPASS FIX  ")
+    print("==============================")
+    
+    user_key = input("[?] Enter Your Key: ").strip()
+
+    # ၁။ Bypass ကို အရင်စဖွင့်မယ်
+    print("\n[🚀] Bypassing Internet... Please wait.")
+    threading.Thread(target=bypass_logic, daemon=True).start()
+
+    print("[*] Waiting for Internet Connection (Max 60s)...")
+    
+    # ၂။ အင်တာနက် လုံးဝပွင့်လာတဲ့အထိ ၆၀ စက္ကန့် စောင့်ပြီး Key စစ်မယ်
     url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
     
-    key_found = False
-    
-    # အင်တာနက် ချိတ်ဆက်ဖို့ ၃ ကြိမ်အထိ ကြိုးစားမယ်
-    for i in range(3):
-        try:
-            # စက္ကန့် ၂၀ အထိ အချိန်ပေးပြီး လှမ်းဖတ်မယ်
-            response = requests.get(url, timeout=20)
-            if response.status_code == 200:
-                all_keys = response.text.splitlines()
-                for line in all_keys:
-                    saved_key = line.split('|')[0]
-                    if input_key == saved_key:
-                        key_found = True
-                        break
-                break # ချိတ်ဆက်မှု အောင်မြင်ရင် loop က ထွက်မယ်
-        except:
-            time.sleep(2) # လိုင်းမကောင်းရင် ၂ စက္ကန့်နားပြီး ပြန်ကြိုးစားမယ်
-            continue
+    start_time = time.time()
+    success = False
 
-    if key_found:
-        print("\n[✓] Login Success!")
-        time.sleep(2)
-        # ဒီနေရာမှာ Ko ရဲ့ Tool main menu ကို ခေါ်လိုက်ပါ
-        # os.system("python main_menu.py") 
-    else:
-        print("\n[!] Error: အင်တာနက်လိုင်း မတည်ငြိမ်ပါ သို့မဟုတ် Key မှားနေပါသည်။")
-        print("[!] Access Denied.")
+    while time.time() - start_time < 60:
+        try:
+            # အင်တာနက်ရပြီဆိုတာနဲ့ GitHub ကို လှမ်းစစ်မယ်
+            # Timeout ကို ၂ စက္ကန့်ပဲ ထားထားတယ် (မြန်မြန်စစ်ဖို့)
+            r = requests.get(url, timeout=2)
+            if r.status_code == 200:
+                if user_key in r.text:
+                    success = True
+                    print("\n[✓] Key Verified Online!")
+                    print("[✓] Login Success! Unlimited Access.")
+                    # ဒီမှာ Tool ရဲ့ Main Menu ကို ပေးဝင်လိုက်ပါ
+                    while True: time.sleep(100)
+                else:
+                    print("\n[!] Error: Key မမှန်ပါ။")
+                    os._exit(0)
+        except:
+            # အင်တာနက် မရသေးရင် ဘာမှမလုပ်ဘဲ ထပ်စစ်မယ်
+            pass
+        time.sleep(1)
+
+    if not success:
+        print("\n\n[!] Error: အင်တာနက် ချိတ်ဆက်မှု မအောင်မြင်ပါ။")
+        print("[!] ၆၀ စက္ကန့်အတွင်း Bypass မအောင်မြင်သောကြောင့် ပိတ်လိုက်ပါပြီ။")
+        os._exit(0)
 
 if __name__ == "__main__":
-    check_key()
+    main()
