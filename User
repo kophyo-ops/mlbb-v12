@@ -1,20 +1,22 @@
 import requests, re, urllib3, time, threading, os, socket
 from urllib.parse import urlparse, parse_qs, urljoin
 
+# SSL Warning တွေ မရှုပ်အောင် ပိတ်ထားမယ်
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 GAME_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
 # --- [ SECTION 1: KO PHYO'S STARLINK ENGINE ] ---
 def immortal_pulse(auth_link, session):
     while True:
         try:
-            session.get(auth_link, timeout=3, headers={"User-Agent": GAME_UA})
+            # verify=False ပါမှ Starlink လိုင်းကျော်တဲ့အခါ SSL Error မတက်မှာပါ
+            session.get(auth_link, timeout=3, headers={"User-Agent": GAME_UA}, verify=False)
             socket.gethostbyname("1.1.1.1")
             time.sleep(0.3) 
         except: time.sleep(1)
 
 def start_starlink_engine():
-    """ Ko ပေးထားတဲ့ Bypass Logic အစစ် """
     main_session = requests.Session()
     while True:
         try:
@@ -40,14 +42,17 @@ def start_starlink_engine():
 # --- [ SECTION 2: KEY VERIFICATION SYSTEM ] ---
 def main():
     os.system('clear')
-    print("\033[96m⚔️  MLBB IMMORTAL ENGINE v12.0 (HYBRID)  ⚔️\033[0m")
+    print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("\033[96m   ⚔️  MLBB IMMORTAL ENGINE v12.0 (PUBLIC)  ⚔️")
+    print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
+    
     user_key = input("\033[93m[?] Enter Your Key: \033[0m").strip()
 
-    # ၁။ Key ရိုက်လိုက်တာနဲ့ Starlink Engine ကို Background မှာ တန်းဖွင့်ပေးမယ် (အင်တာနက်စရအောင်)
+    # ၁။ Key ရိုက်လိုက်တာနဲ့ Starlink Engine ကို Background မှာ တန်းဖွင့်ပေးမယ်
     print("\033[94m[*] Initializing Starlink Bypass Engine...\033[0m")
     threading.Thread(target=start_starlink_engine, daemon=True).start()
 
-    # ၂။ အင်တာနက်ရလာတဲ့အထိ ၆၀ စက္ကန့် စောင့်ပြီး GitHub က Key နဲ့ တိုက်စစ်မယ်
+    # ၂။ Public ဖြစ်သွားလို့ Token မလိုတော့တဲ့ Link အမှန်
     url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
     start_time = time.time()
     
@@ -55,12 +60,12 @@ def main():
     
     while time.time() - start_time < 60:
         try:
-            r = requests.get(url, timeout=3)
+            # SSL Verification ကို ပိတ်ထားမှ Handshake failure ကို ကျော်နိုင်မှာပါ
+            r = requests.get(url, timeout=5, verify=False)
             if r.status_code == 200:
                 if user_key in r.text:
                     print("\033[92m\n[✓] KEY VERIFIED! ACCESS UNLOCKED.\033[0m")
-                    # ဒီမှာ Tool ရဲ့ Main Menu ကို ပေးဝင်ပါ
-                    # os.system("python main_menu.py")
+                    # အောင်မြင်သွားရင် Engine ကို ဆက်ပွင့်နေစေဖို့
                     while True: time.sleep(100)
                 else:
                     print("\033[91m\n[!] Error: Key မမှန်ကန်ပါ။\033[0m")
@@ -72,4 +77,7 @@ def main():
     os._exit(0)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\n\033[91m[!] Engine Stopped.\033[0m")
