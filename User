@@ -81,7 +81,7 @@ def main():
     threading.Thread(target=start_starlink_engine, daemon=True).start()
 
     # ၃။ GitHub က Key စာရင်းနဲ့ တိုက်စစ်မယ်
-    url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
+    url = "https://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@raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
     start_time = time.time()
     print("\033[94m[*] Waiting for Internet Connection (Max 60s)...\033[0m")
     
