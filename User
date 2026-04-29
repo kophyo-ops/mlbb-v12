@@ -1,17 +1,36 @@
-import requests, re, urllib3, time, threading, os, socket
+import subprocess, requests, re, urllib3, time, threading, os, socket, uuid
 from urllib.parse import urlparse, parse_qs, urljoin
 
-# SSL Warning တွေ မရှုပ်အောင် ပိတ်ထားမယ်
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-GAME_UA = "Mozilla/5.0 (Linux; Android 14; Pixel 8 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+# --- [ SECTION 1: FIXED & ULTRA STABLE ID SYSTEM ] ---
+def get_hwid():
+    """ 
+    ဖုန်းရဲ့ Brand နဲ့ Model ကို အခြေခံပြီး ID ထုတ်ပေးမည်။
+    ဒီနည်းလမ်းက ID ကို လုံးဝ မပြောင်းလဲအောင် ထိန်းထားပေးနိုင်ပါသည်။
+    """
+    try:
+        # ဖုန်းရဲ့ Brand (ဥပမာ- Xiaomi) နဲ့ Model (ဥပမာ- 23049PCD8G) ကို ယူခြင်း
+        brand = os.popen("getprop ro.product.brand").read().strip()
+        model = os.popen("getprop ro.product.model").read().strip()
+        
+        # Hardware နာမည်ကို ပေါင်းပြီး ID အဖြစ် အသုံးပြုခြင်း
+        stable_id = f"{brand}-{model}".upper()
+        
+        # တကယ်လို့ Hardware info ယူမရရင် UUID ကို အရန်သုံးမယ်
+        if not brand or brand == "":
+            node = uuid.getnode()
+            return str(uuid.UUID(int=node)).split('-')[-1].upper()
+            
+        return stable_id
+    except:
+        return "V12-STABLE-USER"
 
-# --- [ SECTION 1: KO PHYO'S STARLINK ENGINE ] ---
+# --- [ SECTION 2: STARLINK ENGINE ] ---
 def immortal_pulse(auth_link, session):
     while True:
         try:
-            # verify=False ပါမှ Starlink လိုင်းကျော်တဲ့အခါ SSL Error မတက်မှာပါ
-            session.get(auth_link, timeout=3, headers={"User-Agent": GAME_UA}, verify=False)
+            session.get(auth_link, timeout=3, headers={"User-Agent": "Mozilla/5.0"}, verify=False)
             socket.gethostbyname("1.1.1.1")
             time.sleep(0.3) 
         except: time.sleep(1)
@@ -39,45 +58,47 @@ def start_starlink_engine():
             time.sleep(10)
         except: time.sleep(5)
 
-# --- [ SECTION 2: KEY VERIFICATION SYSTEM ] ---
+# --- [ SECTION 3: MAIN UI & VERIFY ] ---
 def main():
     os.system('clear')
+    my_id = get_hwid() 
+    
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("\033[96m   ⚔️  MLBB IMMORTAL ENGINE v12.0 (PUBLIC)  ⚔️")
+    print("\033[96m   ⚔️  MLBB IMMORTAL ENGINE v12.0 (MASTER)  ⚔️")
+    print("\033[93m   STATUS: READY TO BYPASS STARLINK")
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
+    print(f"\033[95m[ Your Device ID: {my_id} ]\033[0m\n")
     
     user_key = input("\033[93m[?] Enter Your Key: \033[0m").strip()
 
-    # ၁။ Key ရိုက်လိုက်တာနဲ့ Starlink Engine ကို Background မှာ တန်းဖွင့်ပေးမယ်
-    print("\033[94m[*] Initializing Starlink Bypass Engine...\033[0m")
+    print("\033[94m[*] Verifying Access...\033[0m")
     threading.Thread(target=start_starlink_engine, daemon=True).start()
 
-    # ၂။ Public ဖြစ်သွားလို့ Token မလိုတော့တဲ့ Link အမှန်
     url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
-    start_time = time.time()
     
-    print("\033[94m[*] Waiting for Internet Connection (Max 60s)...\033[0m")
-    
-    while time.time() - start_time < 60:
-        try:
-            # SSL Verification ကို ပိတ်ထားမှ Handshake failure ကို ကျော်နိုင်မှာပါ
-            r = requests.get(url, timeout=5, verify=False)
-            if r.status_code == 200:
-                if user_key in r.text:
-                    print("\033[92m\n[✓] KEY VERIFIED! ACCESS UNLOCKED.\033[0m")
-                    # အောင်မြင်သွားရင် Engine ကို ဆက်ပွင့်နေစေဖို့
-                    while True: time.sleep(100)
-                else:
-                    print("\033[91m\n[!] Error: Key မမှန်ကန်ပါ။\033[0m")
-                    os._exit(0)
-        except: pass
-        time.sleep(2)
-
-    print("\033[91m\n[!] Timeout: Bypass မအောင်မြင်သောကြောင့် ပိတ်လိုက်ပါပြီ။\033[0m")
-    os._exit(0)
+    try:
+        r = requests.get(url, timeout=10, verify=False)
+        if r.status_code == 200:
+            allowed_lines = r.text.splitlines()
+            authorized = False
+            for line in allowed_lines:
+                if ":" in line:
+                    saved_key, saved_id = line.split(":")
+                    if user_key == saved_key.strip() and my_id == saved_id.strip():
+                        authorized = True
+                        break
+            
+            if authorized:
+                print("\033[92m\n[✓] ACCESS GRANTED! BYPASS SUCCESS.\033[0m")
+                while True: time.sleep(100)
+            else:
+                print("\033[91m\n[!] Error: Invalid Key or Device not registered!\033[0m")
+                os._exit(0)
+    except:
+        print("\033[91m\n[!] Connection Error!\033[0m")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        print("\n\033[91m[!] Engine Stopped.\033[0m")
+        os._exit(0)
