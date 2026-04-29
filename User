@@ -7,17 +7,12 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 def get_hwid():
     """ 
     ဖုန်းရဲ့ Brand နဲ့ Model ကို အခြေခံပြီး ID ထုတ်ပေးမည်။
-    ဒီနည်းလမ်းက ID ကို လုံးဝ မပြောင်းလဲအောင် ထိန်းထားပေးနိုင်ပါသည်။
     """
     try:
-        # ဖုန်းရဲ့ Brand (ဥပမာ- Xiaomi) နဲ့ Model (ဥပမာ- 23049PCD8G) ကို ယူခြင်း
         brand = os.popen("getprop ro.product.brand").read().strip()
         model = os.popen("getprop ro.product.model").read().strip()
-        
-        # Hardware နာမည်ကို ပေါင်းပြီး ID အဖြစ် အသုံးပြုခြင်း
         stable_id = f"{brand}-{model}".upper()
         
-        # တကယ်လို့ Hardware info ယူမရရင် UUID ကို အရန်သုံးမယ်
         if not brand or brand == "":
             node = uuid.getnode()
             return str(uuid.UUID(int=node)).split('-')[-1].upper()
@@ -74,14 +69,17 @@ def main():
     print("\033[94m[*] Verifying Access...\033[0m")
     threading.Thread(target=start_starlink_engine, daemon=True).start()
 
-    url = "https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt"
+    # Cache မကျန်စေရန် Timestamp ပေါင်းထည့်ထားသော GitHub URL
+    url = f"https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt?t={int(time.time())}"
     
     try:
-        r = requests.get(url, timeout=10, verify=False)
+        # Cache-Control Header ထည့်ပြီး အသစ်ဆုံးကို တိုက်ရိုက်ဆွဲယူခြင်း
+        r = requests.get(url, timeout=10, verify=False, headers={'Cache-Control': 'no-cache'})
         if r.status_code == 200:
             allowed_lines = r.text.splitlines()
             authorized = False
             for line in allowed_lines:
+                line = line.strip()
                 if ":" in line:
                     saved_key, saved_id = line.split(":")
                     if user_key == saved_key.strip() and my_id == saved_id.strip():
@@ -93,12 +91,14 @@ def main():
                 while True: time.sleep(100)
             else:
                 print("\033[91m\n[!] Error: Invalid Key or Device not registered!\033[0m")
+                print(f"\033[90mDebug: ID {my_id} not found in keys.txt\033[0m")
                 os._exit(0)
-    except:
-        print("\033[91m\n[!] Connection Error!\033[0m")
+    except Exception as e:
+        print(f"\033[91m\n[!] Connection Error: {e}\033[0m")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         os._exit(0)
+
