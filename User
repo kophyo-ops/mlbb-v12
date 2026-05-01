@@ -3,85 +3,95 @@ from urllib.parse import urlparse, parse_qs, urljoin
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- [ SECTION 0: FPS & SMOOTHNESS OPTIMIZER ] ---
-def smooth_gaming_mode():
-    """ ဇာတ်ကောင်တွေ လေးမနေအောင် FPS တိုးပေးသည့် စနစ် """
+# --- [ SECTION 1: TURBO OPTIMIZER ] ---
+def turbo_boost():
+    """ CPU နဲ့ Touch တုန့်ပြန်မှု မြန်စေရန် """
     try:
-        # Background Apps တွေကို အကုန်ရှင်းထုတ်ပြီး RAM နေရာလွတ်ယူခြင်း
+        os.system("settings put global window_animation_scale 0.5")
+        os.system("settings put global transition_animation_scale 0.5")
+        os.system("settings put global animator_duration_scale 0.5")
         os.system("am kill-all")
-        # Touch တုန့်ပြန်မှု မြန်အောင်လုပ်ခြင်း
-        os.system("settings put global touch_exploration_enabled 0")
-        # Animation တွေကို လုံးဝပိတ်ပြီး GPU ဝန်ကို လျှော့ချခြင်း
-        os.system("settings put global window_animation_scale 0")
-        os.system("settings put global transition_animation_scale 0")
-        os.system("settings put global animator_duration_scale 0")
-        print("\033[92m[✓] FPS BOOSTED: SMOOTH MODE ACTIVE\033[0m")
     except: pass
 
-# --- [ SECTION 1: NETWORK OPTIMIZER ] ---
+# --- [ SECTION 2: THE BYPASS ENGINE ] ---
 def immortal_pulse(auth_link, session):
-    """ လိုင်းမကျအောင် လုပ်ပေးမည့်အပိုင်း (Thread လျှော့ထားသည်) """
+    """ လိုင်းလုံးဝမကျအောင် 0.5s တစ်ခါ တံခါးကို အတင်းဆွဲဟထားမည် """
     while True:
         try:
-            # Thread အများကြီးသုံးမယ့်အစား အချိန် 0.2 စက္ကန့်ခြားပြီး ပိုတည်ငြိမ်အောင်လုပ်သည်
-            session.get(auth_link, timeout=1.5, headers={"Connection": "keep-alive"}, verify=False)
-            time.sleep(0.2) 
-        except: time.sleep(1)
+            session.get(auth_link, timeout=2, headers={"Connection": "keep-alive"}, verify=False)
+            time.sleep(0.5) 
+        except: time.sleep(2)
 
 def start_starlink_engine():
     main_session = requests.Session()
-    # Connection Pool ကို အချိုးကျ ချိန်ညှိခြင်း (CPU မလေးစေရန်)
-    adapter = requests.adapters.HTTPAdapter(pool_connections=50, pool_maxsize=50)
+    # Connection Pool မြှင့်တင်ခြင်း
+    adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
     main_session.mount('http://', adapter)
     
     while True:
         try:
+            # အင်တာနက် ရှိ/မရှိ အရင်စစ်
             r = main_session.get("http://connectivitycheck.gstatic.com/generate_204", timeout=3)
+            
             if r.status_code != 204:
+                # Portal တွေ့လျှင် ကျော်သည့်အပိုင်း (The Core Logic)
                 p_url = r.url
-                r1 = main_session.get(p_url, timeout=3); match = re.search(r"location\.href\s*=\s*['\"]([^'\"]+)['\"]", r1.text)
+                r1 = main_session.get(p_url, timeout=3)
+                match = re.search(r"location\.href\s*=\s*['\"]([^'\"]+)['\"]", r1.text)
                 n_url = urljoin(p_url, match.group(1)) if match else p_url
-                r2 = main_session.get(n_url, timeout=3); sid = parse_qs(urlparse(r2.url).query).get('sessionId', [None])[0]
+                
+                r2 = main_session.get(n_url, timeout=3)
+                sid = parse_qs(urlparse(r2.url).query).get('sessionId', [None])[0]
+                
                 if sid:
                     p_host = f"{urlparse(p_url).scheme}://{urlparse(p_url).netloc}"
+                    # Voucher Bypass
                     main_session.post(f"{p_host}/api/auth/voucher/", json={'accessCode': '123456', 'sessionId': sid}, timeout=3)
+                    
                     gw = parse_qs(urlparse(p_url).query).get('gw_address', ['192.168.60.1'])[0]
                     port = parse_qs(urlparse(p_url).query).get('gw_port', ['2060'])[0]
                     auth_link = f"http://{gw}:{port}/wifidog/auth?token={sid}"
                     
-                    # Thread ၅ ခုပဲ သုံးပါမယ် (ဒါမှ ဖုန်းမလေးမှာပါ)
-                    for _ in range(5):
+                    # Background မှာ Pulse တွေ လွှတ်တင်မည်
+                    for _ in range(3):
                         threading.Thread(target=immortal_pulse, args=(auth_link, main_session), daemon=True).start()
-            time.sleep(5)
-        except: time.sleep(2)
+                    print("\033[92m[✓] PORTAL BYPASSED! INTERNET IS OPEN.\033[0m")
+            
+            time.sleep(10) # ၁၀ စက္ကန့်တစ်ခါ ပြန်စစ်
+        except: time.sleep(3)
 
-# --- [ SECTION 2: MAIN ] ---
+# --- [ SECTION 3: KEY SYSTEM & 60S RULE ] ---
 def main():
     os.system('clear')
-    smooth_gaming_mode() # FPS Optimizer ကို အရင် Run မည်
-    my_id = f"{os.popen('getprop ro.product.brand').read().strip()}-{os.popen('getprop ro.product.model').read().strip()}".upper()
+    turbo_boost()
+    
+    # Bypass Engine ကို Key မတောင်းခင် အနောက်မှာ ကြိုပတ်ထားမည်
+    threading.Thread(target=start_starlink_engine, daemon=True).start()
     
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("\033[96m   🛡️  MLBB SMART ENGINE v12.5 (STABLE)  🛡️")
-    print("\033[93m   STATUS: BALANCE MODE (LOW PING + HIGH FPS)")
+    print("\033[96m   🛡️  MLBB ULTRA ENGINE v12.9 (FULL)  🛡️")
+    print("\033[93m   STATUS: BYPASSING FOR 60S KEY VERIFICATION")
     print("\033[92m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\033[0m")
     
-    threading.Thread(target=start_starlink_engine, daemon=True).start()
-    time.sleep(2)
-    
+    my_id = f"{os.popen('getprop ro.product.brand').read().strip()}-{os.popen('getprop ro.product.model').read().strip()}".upper()
     print(f"\033[95m[ Device ID: {my_id} ]\033[0m\n")
+    
+    # ၆၀ စက္ကန့်အတွင်း Key ချိတ်ရန် အချိန်ပေးမည်
+    print("\033[94m[*] You have 60 seconds to link your key...\033[0m")
     user_key = input("\033[93m[?] Enter Key: \033[0m").strip()
     
-    # Verify via GitHub (Timestamp cache-free)
     url = f"https://raw.githubusercontent.com/kophyo-ops/mlbb-v12/main/keys.txt?t={int(time.time())}"
     try:
-        r = requests.get(url, timeout=10, verify=False, headers={'Cache-Control': 'no-cache'})
-        if r.status_code == 200:
-            if any(f"{user_key}:{my_id}" in line.strip() for line in r.text.splitlines()):
-                print("\033[92m\n[✓] ACCESS GRANTED! SMOOTH PLAY ENABLED.\033[0m")
-                while True: time.sleep(100)
-            else: print("\033[91m\n[!] Invalid Key!\033[0m"); os._exit(0)
-    except: print("\033[91m\n[!] Connection Error!\033[0m")
+        r = requests.get(url, timeout=10, verify=False)
+        if any(f"{user_key}:{my_id}" in line.strip() for line in r.text.splitlines()):
+            print("\033[92m\n[✓] KEY VERIFIED! FULL ACCESS GRANTED.\033[0m")
+            while True: time.sleep(100) # အောင်မြင်လျှင် အမြဲတမ်း Run မည်
+        else:
+            print("\033[91m\n[!] INVALID KEY. CLOSING IN 60S...\033[0m")
+            time.sleep(60) # Key မှားလျှင် ၆၀ စက္ကန့်သုံးခွင့်ပေးပြီးမှ ပိတ်မည်
+            os._exit(0)
+    except:
+        print("\033[91m\n[!] CONNECTION ERROR! PLEASE TRY AGAIN.\033[0m")
 
 if __name__ == "__main__":
     main()
